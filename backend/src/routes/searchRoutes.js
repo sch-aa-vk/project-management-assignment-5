@@ -3,7 +3,7 @@ const Order = require("../models/Order");
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const { customer_id, status } = req.query;
     const filter = {};
