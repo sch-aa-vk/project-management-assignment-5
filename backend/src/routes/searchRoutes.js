@@ -12,6 +12,7 @@ router.get("/", async (req, res, next) => {
     if (status) filter.status = status;
 
     const orders = await Order.find(filter);
+    
     res.json(orders);
   } catch (err) {
     next(err);
