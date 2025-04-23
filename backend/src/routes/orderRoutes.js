@@ -22,15 +22,13 @@ router.post("/", async (req, res, next) => {
 
 router.get("/", async (req, res, next) => {
   try {
-    if (req.query.customer_id) {
-      const orders = await Order.find({
-        customer_id: req.query.customer_id,
-      });
+    const params = req.query;
+    const filter = {};
 
-      return res.json(orders);
-    }
-    
-    const orders = await Order.find();
+    if (params.customer_id) filter.customer_id = params.customer_id;
+    if (params.status) filter.status = params.status;
+
+    const orders = await Order.find(filter);
 
     res.json(orders);
   } catch (err) {
@@ -40,7 +38,7 @@ router.get("/", async (req, res, next) => {
 
 router.get("/:id", async (req, res, next) => {
   try {
-    const orders = await Order.findById(req.params.id);
+    const orders = await Order.findOne({ order_id: req.params.id });
 
     res.json(orders);
   } catch (err) {
@@ -50,8 +48,17 @@ router.get("/:id", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   try {
-    const updatedOrder = await Order.findByIdAndUpdate(
-      req.params.id,
+    const owner = req.user?.id;
+    const order = await Order.findOne({ order_id: req.params.id });
+    if (order.customer_id.toString() !== owner.toString()) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const updatedOrder = await Order.findOneAndUpdate(
+      { order_id: req.params.id },
       req.body,
       { new: true }
     );
@@ -64,7 +71,16 @@ router.put("/:id", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    await Order.findByIdAndDelete(req.params.id);
+    const owner = req.user?.id;
+    const order = await Order.findOne({ order_id: req.params.id });
+    if (order.customer_id.toString() !== owner.toString()) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    await Order.findOneAndDelete({ order_id: req.params.id });
 
     res.json({ msg: "Order Deleted" });
   } catch (err) {
